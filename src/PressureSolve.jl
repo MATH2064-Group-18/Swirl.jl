@@ -7,7 +7,6 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
     c0 = 0.5 / sum(dxn2)
     c = c0 * dxn2
 
-    d = ndims(f)
     n = length(f)
 
     for iter = 1:maxIterations
