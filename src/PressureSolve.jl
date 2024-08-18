@@ -1,3 +1,3 @@
-module PresureSolve
+module PressureSolve
 
 end # module
