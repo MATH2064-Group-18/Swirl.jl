@@ -12,13 +12,15 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
     for iter = 1:maxIterations
         copy!(f_old, f)
         for i = 1:n
-            A = 0
-            for (j, strid) in enumerate(strides(f))
-                a1 = collision[i-strid] > 0 ? f_old[i-strid] : f_old[i]
-                a2 = collision[i+strid] > 0 ? f_old[i+strid] : f_old[i]
-                A += c[j] * (a1 + a2)
+            if collision[i] > 0
+                A = 0
+                for (j, strid) in enumerate(strides(f))
+                    a1 = collision[i-strid] > 0 ? f_old[i-strid] : f_old[i]
+                    a2 = collision[i+strid] > 0 ? f_old[i+strid] : f_old[i]
+                    A += c[j] * (a1 + a2)
+                end
+                f[i] = A - c0 * g[i]
             end
-            f[i] = A - c0 * g[i]
         end
     end
 end
