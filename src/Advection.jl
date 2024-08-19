@@ -31,4 +31,30 @@ function bilinearInterpolate(f, x, collision)
     return lerp(b1, b2, u[2])
 end
 
+function advectScalar!(f, vel, collision, dx, dt)
+    f_old = similar(f)
+    copy!(f_old, f)
+    
+    n = ndims(f)
+    
+    for I in CartesianIndices(f)
+        if collision[I] > 0
+            u = Vector{eltype(f)}(undef, n)
+            indomain = true
+            for j = 1:n
+                #!!!
+                u[j] = I[j] - vel[j, I] * dt / dx[j]
+                if 0 > u[j] || u[j] > size(f, j)
+                    indomain = false
+                    break
+                end 
+            end
+
+            if indomain
+                f[I] = domainInterpolate(f_old, u, collision)
+            end
+        end
+    end
+end
+
 end # module
