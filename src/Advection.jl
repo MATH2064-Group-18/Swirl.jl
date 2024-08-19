@@ -57,4 +57,11 @@ function advectScalar!(f, vel, collision, dx, dt)
     end
 end
 
+function advectVector!(F, vel, collision, dx, dt)
+    for i = eachindex(dx)
+        f = view(F, i, :, :)
+        advectScalar!(f, vel, collision, dx, dt)
+    end
+end
+
 end # module
