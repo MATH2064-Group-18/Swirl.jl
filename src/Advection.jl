@@ -44,7 +44,7 @@ function advectScalar!(f, vel, collision, dx, dt)
             for j = 1:n
                 #!!!
                 u[j] = I[j] - vel[j, I] * dt / dx[j]
-                if 0 > u[j] || u[j] > size(f, j)
+                if 1 > u[j] || u[j] > size(f, j)
                     indomain = false
                     break
                 end 
