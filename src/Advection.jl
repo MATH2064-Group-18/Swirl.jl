@@ -16,7 +16,7 @@ end
 
 function bilinearInterpolate(f, x, collision)
     c = round.(Int32, x)
-    S = strides(f)
+    S = strides(collision)
     if collision[1 + sum(@. S * (c - 1))] <= 0
         return 0
     end
