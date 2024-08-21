@@ -1,8 +1,8 @@
 
 function projectNonDivergent!(
-    vel, 
-    p, 
-    collision, 
+    vel::Array, 
+    p::Array, 
+    collision::Array, 
     dx
 )
     @assert size(p) == size(collision)
