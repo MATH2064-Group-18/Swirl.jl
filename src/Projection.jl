@@ -47,3 +47,7 @@ function projectNonDivergent!(
         end
     end
 end
+
+function projectNonDivergent!(fluid::Fluid)
+    projectNonDivergent!(fluid.vel, fluid.p, fluid.collision, fluid.dx)
+end
