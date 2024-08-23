@@ -5,6 +5,8 @@ include("PressureSolve.jl")
 include("Advection.jl")
 include("Projection.jl")
 
+export timestepUpdate!
+
 
 function timestepUpdate!(fluid::Fluid, dt)
     vel_old = similar(fluid.vel)
