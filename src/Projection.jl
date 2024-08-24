@@ -23,11 +23,7 @@ function projectNonDivergent!(
 
                 v_div[i] += (b2 - b1) * 0.5 / dx[j]
             end
-            
-
         end
-
-
     end
 
     p_old = similar(p)
