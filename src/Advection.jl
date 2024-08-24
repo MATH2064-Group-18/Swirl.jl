@@ -32,6 +32,8 @@ function bilinearInterpolate(f, x, collision)
 end
 
 function advectScalar!(f, vel, collision, dx, dt)
+    @assert size(collision) == size(f) == size(vel)[2:end]
+    @assert ndims(f) == size(vel, 1) == length(dx)
     f_old = similar(f)
     copy!(f_old, f)
     
