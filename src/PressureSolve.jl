@@ -2,6 +2,12 @@ module PressureSolve
 
 using LinearAlgebra
 
+struct PressureSolveInfo
+    iterations
+    solve_time
+    residual_norm
+end
+
 function jacobi!(f, f_old, g, collision, dx, maxIterations)
     @assert ndims(f) == ndims(f_old) == ndims(g) == ndims(collision) == length(dx)
     
@@ -10,6 +16,8 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
     c = c0 * dxn2
 
     n = length(f)
+
+    t1 = time()
 
     for iter = 1:maxIterations
         copy!(f_old, f)
@@ -25,6 +33,10 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
             end
         end
     end
+
+    t2 = time()
+    
+    return PressureSolveInfo(maxIterations, t2-t1, residualNorm(f, g, collision, dxn2))
 end
 
 function gaussSeidel!(f, g, collision, dx, maxIterations)
@@ -35,6 +47,8 @@ function gaussSeidel!(f, g, collision, dx, maxIterations)
     c = c0 * dxn2
 
     n = length(f)
+
+    t1 = time()
 
     for iter = 1:maxIterations
         for i = 1:n
@@ -49,6 +63,10 @@ function gaussSeidel!(f, g, collision, dx, maxIterations)
             end
         end
     end
+
+    t2 = time()
+
+    return PressureSolveInfo(maxIterations, t2-t1, residualNorm(f, g, collision, dxn2))
 end
 
 function conjugateGradient!(f, g, collision, dx, maxIterations)
@@ -60,6 +78,7 @@ function conjugateGradient!(f, g, collision, dx, maxIterations)
     p = similar(f)
     r = zeros(eltype(f), size(f))
 
+    t1 = time()
 
     for i in eachindex(f)
         if collision[i] > 0
@@ -104,6 +123,26 @@ function conjugateGradient!(f, g, collision, dx, maxIterations)
         
         iter += 1
     end
+
+    t2 = time()
+    
+    return PressureSolveInfo(iter,  t2 - t1, sqrt(res_sum))
+end
+
+function residualNorm(f, g, collision, dxn2)
+    res_sum = 0
+    for i in eachindex(f)
+        if collision[i] > 0
+            res = g[i]
+            for (j, stride_) in enumerate(strides(f)) 
+                a1 = collision[i-stride_] > 0 ? f[i-stride_] : f[i]
+                a2 = collision[i+stride_] > 0 ? f[i+stride_] : f[i]
+                res -= (a1 + a2 - 2 * f[i]) * dxn2[j]
+            end
+            res_sum += res*res
+        end
+    end
+    return sqrt(res_sum)
 end
 
 end # module
