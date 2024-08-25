@@ -69,7 +69,7 @@ function gaussSeidel!(f, g, collision, dx, maxIterations)
     return PressureSolveInfo(maxIterations, t2-t1, residualNorm(f, g, collision, dxn2))
 end
 
-function conjugateGradient!(f, g, collision, dx, maxIterations)
+function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0)
     dxn2 = @. (one(dx) / dx)^2
 
     n = length(f)
@@ -92,10 +92,11 @@ function conjugateGradient!(f, g, collision, dx, maxIterations)
     end
 
     copy!(p, r)
-
+    
     res_sum = sum(abs2, r)
+    tol = (ϵ * norm(g))^2
     iter = 0
-    while iter < maxIterations
+    while iter < maxIterations && tol < res_sum
         for i in eachindex(collision)
             v[i] = 0
             if collision[i] > 0
