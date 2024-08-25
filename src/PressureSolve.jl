@@ -107,7 +107,7 @@ function conjugateGradient!(f, g, collision, dx, maxIterations)
             end
         end
         
-        α = dot(r, r) / dot(p, v)
+        α = res_sum / dot(p, v)
         
         f += α * p
         
