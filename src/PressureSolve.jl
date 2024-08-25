@@ -109,17 +109,20 @@ function conjugateGradient!(f, g, collision, dx, maxIterations)
         
         α = res_sum / dot(p, v)
         
-        f += α * p
+        # f = f + α * p
+        axpy!(α, p, f)
         
         
-        r -= α * v
+        # r = r - α * v
+        axpy!(-α, v, r)
         
         res_sum_old = res_sum
         res_sum = sum(abs2, r)
         
         β = res_sum / res_sum_old
 
-        p = r + β * p
+        # p = r + β * p
+        axpby!(1, r, β, p)
         
         iter += 1
     end
