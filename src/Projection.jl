@@ -29,7 +29,7 @@ function projectNonDivergent!(
     p_old = similar(p)
     copy!(p_old, p)
 
-    PressureSolve.jacobi!(p, p_old, v_div, collision, dx, 80)
+    pressureSolveInfo = PressureSolve.jacobi!(p, p_old, v_div, collision, dx, 80)
 
     for i = 1:n
         if collision[i] > 0
@@ -42,6 +42,8 @@ function projectNonDivergent!(
             end
         end
     end
+
+    return pressureSolveInfo
 end
 
 function projectNonDivergent!(fluid::Fluid)
