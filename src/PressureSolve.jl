@@ -22,7 +22,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
     for iter = 1:maxIterations
         copy!(f_old, f)
         for i = 1:n
-            if collision[i] > 0
+            @inbounds if collision[i] > 0
                 A = 0
                 for (j, strid) in enumerate(strides(f))
                     a1 = collision[i-strid] > 0 ? f_old[i-strid] : f_old[i]
@@ -52,7 +52,7 @@ function gaussSeidel!(f, g, collision, dx, maxIterations)
 
     for iter = 1:maxIterations
         for i = 1:n
-            if collision[i] > 0
+            @inbounds if collision[i] > 0
                 A = 0
                 for (j, strid) in enumerate(strides(f))
                     a1 = collision[i-strid] > 0 ? f[i-strid] : f[i]
@@ -99,7 +99,7 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0)
     while iter < maxIterations && tol < res_sum
         for i in eachindex(collision)
             v[i] = 0
-            if collision[i] > 0
+            @inbounds if collision[i] > 0
                 for (j, s) in enumerate(strides(f))
                     a1 = collision[i-s] > 0 ? p[i-s] : p[i]
                     a2 = collision[i+s] > 0 ? p[i+s] : p[i]
