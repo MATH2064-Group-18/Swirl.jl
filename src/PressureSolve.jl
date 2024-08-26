@@ -9,6 +9,7 @@ struct PressureSolveInfo
 end
 
 function jacobi!(f, f_old, g, collision, dx, maxIterations)
+    @assert size(f) == size(f_old) == size(g) == size(collision)
     @assert ndims(f) == ndims(f_old) == ndims(g) == ndims(collision) == length(dx)
     
     dxn2 = @. (one(dx) / dx)^2
@@ -40,6 +41,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
 end
 
 function gaussSeidel!(f, g, collision, dx, maxIterations)
+    @assert size(f) == size(g) == size(collision)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
     
     dxn2 = @. (one(dx) / dx)^2
@@ -70,6 +72,9 @@ function gaussSeidel!(f, g, collision, dx, maxIterations)
 end
 
 function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0)
+    @assert size(f) == size(g) == size(collision)
+    @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
+
     dxn2 = @. (one(dx) / dx)^2
 
     n = length(f)
