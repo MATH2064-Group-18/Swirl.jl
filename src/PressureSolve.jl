@@ -181,7 +181,6 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
         if collision[i] > 0
             z[i] = w[i]
             for (j, s) in enumerate(strides(z))
-                # A
                 if checkbounds(Bool, collision, i + s) && collision[i + s] > 0
                     z[i] -= -dxn2[j] * z[i + s] / L_diag[i]
                 end
@@ -227,7 +226,6 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
             end
             L_diag[i] = sqrt(A - q)
         else
-            #L_diag[i] = sqrt(c0)
             L_diag[i] = 0
         end
     end
@@ -270,7 +268,6 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
         end
         
         α = r_dot_z / dot(p, v)
-        #α = res_sum / dot(p, v)
         
         # f = f + α * p
         axpy!(α, p, f)
@@ -285,12 +282,10 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
         r_dot_z = dot(r, z)
         res_sum = sum(abs2, r)
         
-        #β = res_sum / res_sum_old
         β = r_dot_z / r_dot_z_old
 
-        # p = r + β * p
+        # p = z + β * p
         axpby!(1, z, β, p)
-        #axpby!(1, r, β, p)
         
         iter += 1
         if !isnothing(res_history)
