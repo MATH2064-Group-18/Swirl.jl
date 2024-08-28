@@ -8,7 +8,7 @@ struct PressureSolveInfo
     residual_norm
 end
 
-function jacobi!(f, f_old, g, collision, dx, maxIterations)
+function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
     @assert size(f) == size(f_old) == size(g) == size(collision)
     @assert ndims(f) == ndims(f_old) == ndims(g) == ndims(collision) == length(dx)
     
@@ -33,6 +33,10 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
                 f[i] = A - c0 * g[i]
             end
         end
+
+        if !isnothing(res_history)
+            push!(res_history, residualNorm(f, g, collision, dxn2))
+        end
     end
 
     t2 = time()
@@ -40,7 +44,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations)
     return PressureSolveInfo(maxIterations, t2-t1, residualNorm(f, g, collision, dxn2))
 end
 
-function gaussSeidel!(f, g, collision, dx, maxIterations)
+function gaussSeidel!(f, g, collision, dx, maxIterations; res_history=nothing)
     @assert size(f) == size(g) == size(collision)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
     
@@ -64,6 +68,10 @@ function gaussSeidel!(f, g, collision, dx, maxIterations)
                 f[i] = A - c0 * g[i]
             end
         end
+
+        if !isnothing(res_history)
+            push!(res_history, residualNorm(f, g, collision, dxn2))
+        end
     end
 
     t2 = time()
@@ -71,7 +79,7 @@ function gaussSeidel!(f, g, collision, dx, maxIterations)
     return PressureSolveInfo(maxIterations, t2-t1, residualNorm(f, g, collision, dxn2))
 end
 
-function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0)
+function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=nothing)
     @assert size(f) == size(g) == size(collision)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
 
@@ -131,6 +139,9 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0)
         axpby!(1, r, β, p)
         
         iter += 1
+        if !isnothing(res_history)
+            push!(res_history, sqrt(res_sum))
+        end
     end
 
     t2 = time()
