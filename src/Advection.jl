@@ -54,6 +54,8 @@ function advectScalar!(f, vel, collision, dx, dt)
 
             if indomain
                 f[I] = domainInterpolate(f_old, u, collision)
+            else
+                f[I] = 0
             end
         end
     end
