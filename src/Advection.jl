@@ -32,6 +32,60 @@ function bilinearInterpolate(f, x, collision)
     return lerp(b1, b2, u[2])
 end
 
+function trilinearInterpolate(f, x, collision)
+    c = round.(Int32, x)
+    S = strides(collision)
+    if collision[i + sum(@. S * (c - 1))] <= 0
+        return 0
+    end
+
+    x0 = floor.(Int32, x)
+    u = x - x0
+
+    index0 = 1 + sum(@. S * (x0 - 1))
+
+    A = @SMatrix [lerp(f[index0], f[index0+S[3]], u[3]) lerp(f[index0+S[2]], f[index0+S[2]+S[3]], u[3]) ;
+        lerp(f[index0+S[1]], f[index0+S[1]+S[3]], u[3]) lerp(f[index0+S[1]+S[2]], f[index0+S[1]+S[2]+S[3]], u[3])
+    ]
+
+    return lerp(lerp(A[1,1], A[2,1], u[1]), lerp(A[1,2], A[2,2], u[1]), u[2])
+end
+
+@generated function linearInterpolate(f::U1, x::U2{N, T}, collision::Array{T, N}) where {N, T<:AbstractFloat, U1<:AbstractArray{T, N}, U2<:StaticVector{N, T}}
+    quote
+        c = round.(Int32, x)
+        S = strides(collision)
+        if collision[1 + sum(@. S * (c - 1))] <= 0
+            return 0
+        end
+
+        x0 = floor.(Int32, x)
+        u = x - x0
+
+        index0 = 1 + sum(@. S * (x0 - 1))
+
+        n = length(x)
+
+        b = MVector{2<<N, T}
+    
+        p = 0
+        Base.Cartesian.@nloops $N i d0 -> 1:2 d -> j_d = ((i_d-1)*stride(collision, d)) begin
+            index = index0 + Base.@ncall($N, +, j)
+            b[p] = f[index]
+            p+=1
+        end
+
+        for i in 1:N
+            n = 2 << (N-i)
+            for j = 1:(n-1)
+                b[i] = lerp(b[2j], b[2j+1], u[i])
+            end
+        end
+            
+        b[1]
+    end
+end
+
 function advectScalar!(f::U1, vel::U2, collision::Array{T, N}, dx::Vector{T}, dt::T) where {T<:AbstractFloat, N, U1<:AbstractArray{T, N}, U2<:AbstractArray{T}}
     @assert size(collision) == size(f) == size(vel)[2:end]
     @assert ndims(f) == size(vel, 1) == length(dx)
