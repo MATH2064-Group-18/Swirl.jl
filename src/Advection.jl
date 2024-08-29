@@ -51,7 +51,7 @@ function trilinearInterpolate(f, x, collision)
     return lerp(lerp(A[1,1], A[2,1], u[1]), lerp(A[1,2], A[2,2], u[1]), u[2])
 end
 
-@generated function linearInterpolate(f::U1, x::U2{N, T}, collision::Array{T, N}) where {N, T<:AbstractFloat, U1<:AbstractArray{T, N}, U2<:StaticVector{N, T}}
+@generated function linearInterpolate(f::U1, x::U2, collision::Array{T, N}) where {N, T<:AbstractFloat, U1<:AbstractArray{T, N}, U2<:StaticVector{N, T}}
     quote
         c = round.(Int32, x)
         S = strides(collision)
