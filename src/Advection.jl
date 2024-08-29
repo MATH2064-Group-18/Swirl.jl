@@ -10,6 +10,10 @@ function domainInterpolate(f, x, collision)
     if ndims(f) == 2
         return bilinearInterpolate(f, x, collision)
     end
+    return linearInterpolate(f, x, collision)
+end
+
+function nearestInterpolate(f, x, collision)
     c = round.(Int, x)
     I = CartesianIndex(Tuple(c))
     return collision[I] > 0 ? f[I] : 0
