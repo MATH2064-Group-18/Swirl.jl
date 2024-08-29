@@ -1,5 +1,6 @@
 module Advection
 
+using StaticArrays
 
 function lerp(a, b, bias)
     return (1 - bias) * a + bias * b
@@ -31,7 +32,7 @@ function bilinearInterpolate(f, x, collision)
     return lerp(b1, b2, u[2])
 end
 
-function advectScalar!(f, vel, collision, dx, dt)
+function advectScalar!(f::U1, vel::U2, collision::Array{T, N}, dx::Vector{T}, dt::T) where {T<:AbstractFloat, N, U1<:AbstractArray{T, N}, U2<:AbstractArray{T}}
     @assert size(collision) == size(f) == size(vel)[2:end]
     @assert ndims(f) == size(vel, 1) == length(dx)
     f_old = similar(f)
@@ -41,7 +42,7 @@ function advectScalar!(f, vel, collision, dx, dt)
     
     for I in CartesianIndices(f)
         if collision[I] > 0
-            u = Vector{eltype(f)}(undef, n)
+            u = MVector{N, T}(undef)
             indomain = true
             for j = 1:n
                 #!!!
@@ -61,10 +62,30 @@ function advectScalar!(f, vel, collision, dx, dt)
     end
 end
 
-function advectVector!(F, vel, collision, dx, dt)
-    for i = eachindex(dx)
-        f = view(F, i, :, :)
-        advectScalar!(f, vel, collision, dx, dt)
+function advectVector!(F::U, vel::U, collision::Array{T, N}, dx::Vector{T}, dt::T) where {T<:AbstractFloat, N, NN, U<:AbstractArray{T, NN}}    
+    n = size(F, 1)
+
+    F_old = similar(F)
+    copy!(F_old, F)
+    
+    for I in CartesianIndices(size(F)[2:end])
+        if collision[I] > 0
+            u = MVector{N, T}(undef)
+            indomain = true
+            for j = 1:n
+                u[j] = I[j] - vel[j, I] * dt / dx[j]
+                if 1 > u[j] || u[j] > size(collision, j)
+                    indomain = false
+                    break
+                end
+            end
+
+            if indomain
+                for j = 1:n
+                    F[j, I] = domainInterpolate(view(F_old, j, :, :), u, collision)
+                end
+            end
+        end
     end
 end
 
