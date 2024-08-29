@@ -66,10 +66,10 @@ end
 
         n = length(x)
 
-        b = MVector{2<<N, T}
+        b = MVector{2<<(N-1), T}(undef)
     
-        p = 0
-        Base.Cartesian.@nloops $N i d0 -> 1:2 d -> j_d = ((i_d-1)*stride(collision, d)) begin
+        p = 1
+        Base.Cartesian.@nloops $N i d0 -> (1:2) d -> j_d = ((i_d-1)*stride(collision, d)) begin
             index = index0 + Base.@ncall($N, +, j)
             b[p] = f[index]
             p+=1
@@ -77,8 +77,8 @@ end
 
         for i in 1:N
             n = 2 << (N-i)
-            for j = 1:(n-1)
-                b[i] = lerp(b[2j], b[2j+1], u[i])
+            for (j, k) in enumerate(1:2:n)
+                b[j] = lerp(b[k], b[k+1], u[i])
             end
         end
             
