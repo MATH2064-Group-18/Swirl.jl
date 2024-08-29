@@ -5,7 +5,7 @@ include("PressureSolve.jl")
 include("Advection.jl")
 include("Projection.jl")
 
-export timestepUpdate!
+export timestepUpdate!, Fluid
 
 
 function timestepUpdate!(fluid::Fluid, dt)
