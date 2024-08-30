@@ -2,6 +2,8 @@ module PressureSolve
 
 using LinearAlgebra
 
+export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradient!, PressureSolveInfo
+
 struct PressureSolveInfo
     iterations
     solve_time
@@ -23,6 +25,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
     for iter = 1:maxIterations
         copy!(f_old, f)
         for i = 1:n
+            # Ain't got no time for bounds checks
             @inbounds if collision[i] > 0
                 A = 0
                 for (j, strid) in enumerate(strides(f))
@@ -150,6 +153,7 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=
 end
 
 function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
+    
     # solve Lw = r
 
     n = length(z)
@@ -245,7 +249,6 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
         end
     end
 
-    #copy!(p, r)
 
     applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
     
@@ -298,6 +301,11 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
     return PressureSolveInfo(iter,  t2 - t1, sqrt(res_sum))
 end
 
+"""
+    residualNorm(f, g, collision, dxn2)
+
+Compute 2-norm of residual.
+"""
 function residualNorm(f, g, collision, dxn2)
     res_sum = 0
     for i in eachindex(f)

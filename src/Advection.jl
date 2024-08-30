@@ -2,6 +2,11 @@ module Advection
 
 using StaticArrays
 
+"""
+    lerp(a, b, bias)
+
+Linearly interpolate between `a` and `b` based on `bias`.
+"""
 function lerp(a, b, bias)
     return (1 - bias) * a + bias * b
 end
