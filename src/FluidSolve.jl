@@ -7,7 +7,11 @@ include("Projection.jl")
 
 export timestepUpdate!, Fluid
 
+"""
+    timestepUpdate!(fluid, dt)
 
+Solve over timestep `dt`.
+"""
 function timestepUpdate!(fluid::Fluid, dt)
     vel_old = similar(fluid.vel)
     copy!(vel_old, fluid.vel)

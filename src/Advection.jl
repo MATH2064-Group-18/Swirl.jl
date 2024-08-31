@@ -2,6 +2,8 @@ module Advection
 
 using StaticArrays
 
+export advectScalar!, advectVector!
+
 """
     lerp(a, b, bias)
 
@@ -11,11 +13,16 @@ function lerp(a, b, bias)
     return (1 - bias) * a + bias * b
 end
 
+"""
+    domainInterpolate(f, x, collision)
+
+Interpolate values of `f` at pos `x` in index space.
+"""
 function domainInterpolate(f, x, collision)
     if ndims(f) == 2
         return bilinearInterpolate(f, x, collision)
     end
-    return linearInterpolate(f, x, collision)
+    return generalLinearInterpolate(f, x, collision)
 end
 
 function nearestInterpolate(f, x, collision)
@@ -60,7 +67,7 @@ function trilinearInterpolate(f, x, collision)
     return lerp(lerp(A[1,1], A[2,1], u[1]), lerp(A[1,2], A[2,2], u[1]), u[2])
 end
 
-@generated function linearInterpolate(f::U1, x::U2, collision::Array{T, N}) where {N, T<:AbstractFloat, U1<:AbstractArray{T, N}, U2<:StaticVector{N, T}}
+@generated function generlLinearInterpolate(f::U1, x::U2, collision::Array{T, N}) where {N, T<:AbstractFloat, U1<:AbstractArray{T, N}, U2<:StaticVector{N, T}}
     quote
         c = round.(Int32, x)
         S = strides(collision)
@@ -95,6 +102,11 @@ end
     end
 end
 
+"""
+    advectScalar(f, vel, collision, dx, dt)
+
+Semi-Lagrangian advection of `f`.
+"""
 function advectScalar!(f::U1, vel::U2, collision::Array{T, N}, dx::Vector{T}, dt::T) where {T<:AbstractFloat, N, U1<:AbstractArray{T, N}, U2<:AbstractArray{T}}
     @assert size(collision) == size(f) == size(vel)[2:end]
     @assert ndims(f) == size(vel, 1) == length(dx)
@@ -125,6 +137,11 @@ function advectScalar!(f::U1, vel::U2, collision::Array{T, N}, dx::Vector{T}, dt
     end
 end
 
+"""
+    advectVector!(F, vel, collision, dx, dt)
+
+Semi-Lagrangian advection of vector field `F`. Is same as advectScalar! but for vector fields.
+"""
 function advectVector!(F::U, vel::U, collision::Array{T, N}, dx::Vector{T}, dt::T) where {T<:AbstractFloat, N, NN, U<:AbstractArray{T, NN}}    
     n = size(F, 1)
 

@@ -5,6 +5,8 @@ include("PressureSolve.jl")
 include("FluidSolve.jl")
 
 using .FluidSolve
+using .PressureSolve
+using .Advection
 
 greet() = print("Hello World!")
 

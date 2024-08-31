@@ -1,4 +1,16 @@
+"""
+    projectNonDivergent!(vel, p, collision, dx)
 
+Removes divergence in `vel`.
+
+
+Solves the pressure Poisson equation ∇²p = ∇⋅vel, 
+and removing removing the divergence in `vel` by updating
+vel to vel = vel - ∇p.
+
+Note: `p` is not the true pressure (we call it the pseudo-pressure), it is proportional
+to it by the factor p_true = p_pseudo * Δt / ρ.
+"""
 function projectNonDivergent!(
     vel::Array, 
     p::Array, 

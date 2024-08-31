@@ -7,9 +7,14 @@ export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradien
 struct PressureSolveInfo
     iterations
     solve_time
-    residual_norm
+    residual_norm # 2-norm
 end
 
+"""
+    jacobi!(f, f_old, g, collision, dx, maxIterations; res_history)
+
+Solve Poisson equation ∇²f = g using Jacobi method.
+"""
 function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
     @assert size(f) == size(f_old) == size(g) == size(collision)
     @assert ndims(f) == ndims(f_old) == ndims(g) == ndims(collision) == length(dx)
@@ -47,6 +52,11 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
     return PressureSolveInfo(maxIterations, t2-t1, residualNorm(f, g, collision, dxn2))
 end
 
+"""
+    gaussSeidel!(f, g, collision, dx, maxIterations; res_history)
+
+Solve Poisson equation ∇²f = g using Gauss-Seidel method.
+"""
 function gaussSeidel!(f, g, collision, dx, maxIterations; res_history=nothing)
     @assert size(f) == size(g) == size(collision)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
@@ -82,6 +92,12 @@ function gaussSeidel!(f, g, collision, dx, maxIterations; res_history=nothing)
     return PressureSolveInfo(maxIterations, t2-t1, residualNorm(f, g, collision, dxn2))
 end
 
+"""
+    conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history)
+
+Solve Poisson equation ∇²f = g using conjugate gradient method. 
+
+"""
 function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=nothing)
     @assert size(f) == size(g) == size(collision)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
@@ -152,6 +168,11 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=
     return PressureSolveInfo(iter,  t2 - t1, sqrt(res_sum))
 end
 
+"""
+    applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
+
+Apply incomplete Cholesky preconditioner.
+"""
 function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
     
     # solve Lw = r
@@ -160,6 +181,7 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
 
     w[1] = collision[1] > 0 ? r[1] / L_diag[1] : 0
 
+    # Forward substition
     for i in eachindex(w)
         if collision[i] > 0
             w[i] = r[i]
@@ -181,11 +203,12 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
 
     z[end] = collision[end] > 0 ? w[end] / L_diag[end] : 0 
 
+    # Back substitution
     for i in reverse(eachindex(z))
         if collision[i] > 0
             z[i] = w[i]
             for (j, s) in enumerate(strides(z))
-                if checkbounds(Bool, collision, i + s) && collision[i + s] > 0
+                if (i + s) <= n && collision[i + s] > 0
                     z[i] -= -dxn2[j] * z[i + s] / L_diag[i]
                 end
             end
@@ -196,6 +219,11 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
     end
 end
 
+"""
+    preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history)
+
+Solve Poisson equation ∇²f = g, using incomplete Cholesky preconditioned conjugate gradient method. 
+"""
 function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0; res_history=nothing)
     @assert size(f) == size(g) == size(collision)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
@@ -280,7 +308,6 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
         axpy!(-α, v, r)
         
         applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
-        res_sum_old = res_sum
         r_dot_z_old = r_dot_z
         r_dot_z = dot(r, z)
         res_sum = sum(abs2, r)
