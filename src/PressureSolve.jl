@@ -29,7 +29,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
 
     for iter = 1:maxIterations
         copy!(f_old, f)
-        for i = 1:n
+        Threads.@threads for i = 1:n
             # Ain't got no time for bounds checks
             @inbounds if collision[i] > 0
                 A = 0
@@ -129,8 +129,8 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=
     tol = (ϵ * norm(g))^2
     iter = 0
     while iter < maxIterations && tol < res_sum
-        for i in eachindex(collision)
-            v[i] = 0
+        Threads.@threads for i in eachindex(collision)
+            @inbounds v[i] = 0
             @inbounds if collision[i] > 0
                 for (j, s) in enumerate(strides(f))
                     a1 = collision[i-s] > 0 ? p[i-s] : p[i]
@@ -142,20 +142,21 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=
         
         α = res_sum / dot(p, v)
         
-        # f = f + α * p
-        axpy!(α, p, f)
+        @inbounds Threads.@threads for i in eachindex(f)
+            f[i] += α * p[i]
+            r[i] -= α * v[i]
+        end
         
-        
-        # r = r - α * v
-        axpy!(-α, v, r)
         
         res_sum_old = res_sum
-        res_sum = sum(abs2, r)
+        res_sum = dot(r, r)
         
         β = res_sum / res_sum_old
 
         # p = r + β * p
-        axpby!(1, r, β, p)
+        @inbounds Threads.@threads for i in eachindex(f)
+            p[i] = r[i] + β * p[i]
+        end
         
         iter += 1
         if !isnothing(res_history)
@@ -182,7 +183,7 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
     w[1] = collision[1] > 0 ? r[1] / L_diag[1] : 0
 
     # Forward substition
-    for i in eachindex(w)
+    @inbounds for i in eachindex(w)
         if collision[i] > 0
             w[i] = r[i]
             for (j, s) in enumerate(strides(w))
@@ -195,16 +196,13 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
             w[i] = 0
         end
     end
-    for j = 1:n
-        l = j - 1
-    end
 
     # solve Lᵀz = w
 
     z[end] = collision[end] > 0 ? w[end] / L_diag[end] : 0 
 
     # Back substitution
-    for i in reverse(eachindex(z))
+    @inbounds for i in reverse(eachindex(z))
         if collision[i] > 0
             z[i] = w[i]
             for (j, s) in enumerate(strides(z))
@@ -287,8 +285,8 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
     tol = (ϵ * norm(g))^2
     iter = 0
     while iter < maxIterations && tol < res_sum
-        for i in eachindex(collision)
-            v[i] = 0
+        Threads.@threads for i in eachindex(collision)
+            @inbounds v[i] = 0
             @inbounds if collision[i] > 0
                 for (j, s) in enumerate(strides(f))
                     a1 = collision[i-s] > 0 ? p[i-s] : p[i]
@@ -301,19 +299,21 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
         α = r_dot_z / dot(p, v)
         
         # f = f + α * p
-        axpy!(α, p, f)
+        f_update_task = Threads.@spawn axpy!(α, p, f)
         
         
         # r = r - α * v
         axpy!(-α, v, r)
         
         applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
+        res_sum = dot(r, r)
         r_dot_z_old = r_dot_z
         r_dot_z = dot(r, z)
-        res_sum = sum(abs2, r)
         
         β = r_dot_z / r_dot_z_old
 
+        wait(f_update_task)
+        
         # p = z + β * p
         axpby!(1, z, β, p)
         
