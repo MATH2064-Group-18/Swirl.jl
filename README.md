@@ -4,7 +4,7 @@ Welcome! Swirl.jl is a Julia package for fluid simulation.
 
 ## Getting Started
 
-To use simply add the package
+Add the package using:
 ```julia
 Pkg.add("https://github.com/MATH2064-Group-18/Swirl.jl")
 ```
