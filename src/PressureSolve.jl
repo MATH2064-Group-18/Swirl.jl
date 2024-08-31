@@ -2,12 +2,19 @@ module PressureSolve
 
 using LinearAlgebra
 
-export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradient!, PressureSolveInfo
+export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradient!, PressureSolveInfo, PressureSolveMethod
 
 struct PressureSolveInfo
     iterations
     solve_time
     residual_norm # 2-norm
+end
+
+@enum PressureSolveMethod begin
+    JacobiMethod
+    GaussSeidelMethod
+    ConjugateGradientMethod
+    PreconditionedConjugateGradientMethod
 end
 
 """

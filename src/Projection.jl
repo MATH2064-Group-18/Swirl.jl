@@ -15,7 +15,7 @@ function projectNonDivergent!(
     vel::Array, 
     p::Array, 
     collision::Array, 
-    dx
+    dx; solveMethod=PressureSolve.PressureSolveMethod, maxIterations=80, ϵ=0.4
 )
     @assert size(p) == size(collision)
     n = length(p)
@@ -38,10 +38,21 @@ function projectNonDivergent!(
         end
     end
 
-    p_old = similar(p)
-    copy!(p_old, p)
+    
+    if solveMethod == PressureSolve.JacobiMethod
+        p_old = similar(p)
+        copy!(p_old, p)
+        pressureSolveInfo = PressureSolve.jacobi!(p, p_old, v_div, collision, dx, maxIterations)
+    elseif solveMethod == PressureSolve.GaussSeidelMethod
+        pressureSolveInfo = PressureSolve.gaussSeidel!(p, v_div, collision, dx, maxIterations)
+    elseif solveMethod == PressureSolve.ConjugateGradientMethod
+        fill!(p, zero(eltype(p)))
+        pressureSolveInfo = PressureSolve.conjugateGradient!(p, v_div, collision, dx, maxIterations, ϵ)
+    else
+        fill!(p, zero(eltype(p)))
+        pressureSolveInfo = PressureSolve.preconditionedConjugateGradient!(p, v_div, collision, dx, maxIterations, ϵ)
+    end
 
-    pressureSolveInfo = PressureSolve.jacobi!(p, p_old, v_div, collision, dx, 80)
 
     for i = 1:n
         if collision[i] > 0
@@ -58,6 +69,6 @@ function projectNonDivergent!(
     return pressureSolveInfo
 end
 
-function projectNonDivergent!(fluid::Fluid)
-    projectNonDivergent!(fluid.vel, fluid.p, fluid.collision, fluid.dx)
+function projectNonDivergent!(fluid::Fluid; solveMethod::PressureSolve.PressureSolveMethod=PressureSolve.JacobiMethod, maxIterations=80, ϵ=0.4)
+    projectNonDivergent!(fluid.vel, fluid.p, fluid.collision, fluid.dx; solveMethod=solveMethod, maxIterations=maxIterations, ϵ=ϵ)
 end
