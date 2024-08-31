@@ -115,12 +115,11 @@ function advectScalar!(f::U1, vel::U2, collision::Array{T, N}, dx::Vector{T}, dt
     
     n = ndims(f)
     
-    for I in CartesianIndices(f)
+    Threads.@threads for I in CartesianIndices(f)
         if collision[I] > 0
             u = MVector{N, T}(undef)
             indomain = true
             for j = 1:n
-                #!!!
                 u[j] = I[j] - vel[j, I] * dt / dx[j]
                 if 1 > u[j] || u[j] > size(f, j)
                     indomain = false
@@ -148,7 +147,7 @@ function advectVector!(F::U, vel::U, collision::Array{T, N}, dx::Vector{T}, dt::
     F_old = similar(F)
     copy!(F_old, F)
     
-    for I in CartesianIndices(size(F)[2:end])
+    Threads.@threads for I in CartesianIndices(size(F)[2:end])
         if collision[I] > 0
             u = MVector{N, T}(undef)
             indomain = true
