@@ -27,7 +27,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
     @assert ndims(f) == ndims(f_old) == ndims(g) == ndims(collision) == length(dx)
     
     dxn2 = @. (one(dx) / dx)^2
-    c0 = 0.5 / sum(dxn2)
+    c0 = convert(eltype(f), 0.5) / sum(dxn2)
     c = c0 * dxn2
 
     n = length(f)
@@ -39,7 +39,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
         Threads.@threads for i = 1:n
             # Ain't got no time for bounds checks
             @inbounds if collision[i] > 0
-                A = 0
+                A = zero(eltype(f))
                 for (j, strid) in enumerate(strides(f))
                     a1 = collision[i-strid] > 0 ? f_old[i-strid] : f_old[i]
                     a2 = collision[i+strid] > 0 ? f_old[i+strid] : f_old[i]
@@ -69,7 +69,7 @@ function gaussSeidel!(f, g, collision, dx, maxIterations; res_history=nothing)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
     
     dxn2 = @. (one(dx) / dx)^2
-    c0 = 0.5 / sum(dxn2)
+    c0 = convert(eltype(f), 0.5) / sum(dxn2)
     c = c0 * dxn2
 
     n = length(f)
@@ -79,7 +79,7 @@ function gaussSeidel!(f, g, collision, dx, maxIterations; res_history=nothing)
     for iter = 1:maxIterations
         for i = 1:n
             @inbounds if collision[i] > 0
-                A = 0
+                A = zero(eltype(f))
                 for (j, strid) in enumerate(strides(f))
                     a1 = collision[i-strid] > 0 ? f[i-strid] : f[i]
                     a2 = collision[i+strid] > 0 ? f[i+strid] : f[i]
