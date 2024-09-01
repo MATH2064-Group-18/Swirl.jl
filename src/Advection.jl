@@ -107,7 +107,7 @@ end
 
 Semi-Lagrangian advection of `f`.
 """
-function advectScalar!(f::U1, vel::U2, collision::Array{T, N}, dx::Vector{T}, dt::T) where {T<:AbstractFloat, N, U1<:AbstractArray{T, N}, U2<:AbstractArray{T}}
+function advectScalar!(f::U1, vel::U2, collision::Array{T, N}, dx::Vector{T}, dt) where {T<:AbstractFloat, N, U1<:AbstractArray{T, N}, U2<:AbstractArray{T}}
     @assert size(collision) == size(f) == size(vel)[2:end]
     @assert ndims(f) == size(vel, 1) == length(dx)
     f_old = similar(f)
@@ -141,7 +141,7 @@ end
 
 Semi-Lagrangian advection of vector field `F`. Is same as advectScalar! but for vector fields.
 """
-function advectVector!(F::U, vel::U, collision::Array{T, N}, dx::Vector{T}, dt::T) where {T<:AbstractFloat, N, NN, U<:AbstractArray{T, NN}}    
+function advectVector!(F::U, vel::U, collision::Array{T, N}, dx::Vector{T}, dt) where {T<:AbstractFloat, N, NN, U<:AbstractArray{T, NN}}    
     n = size(F, 1)
 
     F_old = similar(F)
@@ -160,8 +160,8 @@ function advectVector!(F::U, vel::U, collision::Array{T, N}, dx::Vector{T}, dt::
             end
 
             if indomain
-                for j = 1:n
-                    F[j, I] = domainInterpolate(view(F_old, j, :, :), u, collision)
+                for (j, v) in enumerate(eachslice(F_old, dims=1))
+                    F[j, I] = domainInterpolate(v, u, collision)
                 end
             end
         end
