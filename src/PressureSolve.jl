@@ -181,13 +181,13 @@ end
 
 Apply incomplete Cholesky preconditioner.
 """
-function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
+function applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
     
     # solve Lw = r
 
     n = length(z)
 
-    w[1] = collision[1] > 0 ? r[1] / L_diag[1] : 0
+    w[1] = collision[1] > 0 ? r[1] * L_diag_rcp[1] : 0
 
     # Forward substition
     @inbounds for i in eachindex(w)
@@ -195,10 +195,10 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
             w[i] = r[i]
             for (j, s) in enumerate(strides(w))
                 if checkbounds(Bool, collision, i - s) && collision[i - s] > 0
-                    w[i] -= -dxn2[j] * w[i - s] / L_diag[i-s]
+                    w[i] -= -dxn2[j] * w[i - s] * L_diag_rcp[i-s]
                 end
             end
-            w[i] = w[i] / L_diag[i]
+            w[i] = w[i] * L_diag_rcp[i]
         else
             w[i] = 0
         end
@@ -206,7 +206,7 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
 
     # solve Lᵀz = w
 
-    z[end] = collision[end] > 0 ? w[end] / L_diag[end] : 0 
+    z[end] = collision[end] > 0 ? w[end] * L_diag_rcp[end] : 0 
 
     # Back substitution
     @inbounds for i in reverse(eachindex(z))
@@ -214,10 +214,10 @@ function applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
             z[i] = w[i]
             for (j, s) in enumerate(strides(z))
                 if (i + s) <= n && collision[i + s] > 0
-                    z[i] -= -dxn2[j] * z[i + s] / L_diag[i]
+                    z[i] -= -dxn2[j] * z[i + s] * L_diag_rcp[i]
                 end
             end
-            z[i] = z[i] / L_diag[i]
+            z[i] = z[i] * L_diag_rcp[i]
         else
             z[i] = 0
         end
@@ -243,27 +243,27 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
 
     w = similar(v)
     
-    L_diag = similar(w)
+    L_diag_rcp = similar(w)
     
     t1 = time()
 
 
-    L_diag[1] = collision[1] <= 0 ? 0 : sqrt(c0)
-    for i in eachindex(L_diag)
+    L_diag_rcp[1] = collision[1] <= 0 ? 0 : 1 / sqrt(c0)
+    for i in eachindex(L_diag_rcp)
         if collision[i] > 0
             q = zero(eltype(f))
             A = c0
             for (j, s) in enumerate(strides(f))
-                if checkbounds(Bool, L_diag, i - s) && collision[i-s] > 0
-                    q += (-dxn2[j] / L_diag[i - s])^2
+                if checkbounds(Bool, L_diag_rcp, i - s) && collision[i-s] > 0
+                    q += (-dxn2[j] * L_diag_rcp[i - s])^2
                 else
                     A += -dxn2[j]
                 end
-                A += checkbounds(Bool, L_diag, i + s) && collision[i+s] > 0 ? 0 : -dxn2[j] 
+                A += checkbounds(Bool, L_diag_rcp, i + s) && collision[i+s] > 0 ? 0 : -dxn2[j] 
             end
-            L_diag[i] = sqrt(A - q)
+            L_diag_rcp[i] = 1 / sqrt(A - q)
         else
-            L_diag[i] = 0
+            L_diag_rcp[i] = 0
         end
     end
 
@@ -283,7 +283,7 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
     end
 
 
-    applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
+    applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
     
     copy!(p, z)
 
@@ -312,7 +312,7 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
         # r = r - α * v
         axpy!(-α, v, r)
         
-        applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
+        applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
         res_sum = dot(r, r)
         r_dot_z_old = r_dot_z
         r_dot_z = dot(r, z)
