@@ -195,10 +195,10 @@ function applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
             w[i] = r[i]
             for (j, s) in enumerate(strides(w))
                 if checkbounds(Bool, collision, i - s) && collision[i - s] > 0
-                    w[i] -= -dxn2[j] * w[i - s] * L_diag_rcp[i-s]
+                    w[i] += dxn2[j] * w[i - s] * L_diag_rcp[i-s]
                 end
             end
-            w[i] = w[i] * L_diag_rcp[i]
+            w[i] *= L_diag_rcp[i]
         else
             w[i] = 0
         end
@@ -214,10 +214,10 @@ function applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
             z[i] = w[i]
             for (j, s) in enumerate(strides(z))
                 if (i + s) <= n && collision[i + s] > 0
-                    z[i] -= -dxn2[j] * z[i + s] * L_diag_rcp[i]
+                    z[i] += dxn2[j] * z[i + s] * L_diag_rcp[i]
                 end
             end
-            z[i] = z[i] * L_diag_rcp[i]
+            z[i] *= L_diag_rcp[i]
         else
             z[i] = 0
         end
