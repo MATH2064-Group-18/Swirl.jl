@@ -26,7 +26,7 @@ function projectNonDivergent!(
     v_div = zeros(eltype(p), size(p))
     
     s0 = size(vel, 1)
-    for i = 1:n
+    Threads.@threads for i = 1:n
         if collision[i] > 0
             for j = 1:d
                 s = stride(p, j)
@@ -42,7 +42,7 @@ function projectNonDivergent!(
     pressureSolveInfo = PressureSolve.poissonSolve!(solver, p, v_div, collision; maxIterations=maxIterations)
 
 
-    for i = 1:n
+    Threads.@threads for i = 1:n
         if collision[i] > 0
             for j = 1:d
                 strid = stride(p, j)

@@ -14,6 +14,9 @@ end
 
 abstract type PressureSolver{T<:AbstractFloat, N} end
 
+
+##### IGNORABLE BOILERPLATE CODE ####
+
 mutable struct JacobiSolver{T<:AbstractFloat, N} <: PressureSolver{T, N}
     dx::Vector{T}
     maxIterations::Int
@@ -70,6 +73,7 @@ function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g:
     return conjugateGradient!(solver.p, solver.r, solver.v, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
 end
 
+#### END OF IGNORABLE CODE ####
 
 
 
@@ -173,6 +177,7 @@ function conjugateGradient!(p, r, v, f, g, collision, dx, maxIterations, ϵ; res
     t1 = time()
 
     for i in eachindex(f)
+        r[i] = 0
         if collision[i] > 0
             r[i] = g[i]
             for (j, s) in enumerate(strides(f))
@@ -213,7 +218,6 @@ function conjugateGradient!(p, r, v, f, g, collision, dx, maxIterations, ϵ; res
         
         β = res_sum / res_sum_old
 
-        # p = r + β * p
         @inbounds Threads.@threads for i in eachindex(f)
             p[i] = r[i] + β * p[i]
         end
@@ -237,9 +241,9 @@ Apply incomplete Cholesky preconditioner.
 """
 function applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
     
-    # solve Lw = r
-
     n = length(z)
+    
+    ## solve Lw = r ##
 
     w[1] = collision[1] > 0 ? r[1] * L_diag_rcp[1] : 0
 
@@ -258,7 +262,7 @@ function applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
         end
     end
 
-    # solve Lᵀz = w
+    ## solve Lᵀz = w ##
 
     z[end] = collision[end] > 0 ? w[end] * L_diag_rcp[end] : 0 
 
@@ -276,10 +280,11 @@ function applyPreconditioner!(z, w, r, L_diag_rcp, collision, dxn2)
             z[i] = 0
         end
     end
+    nothing
 end
 
 """
-    preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history)
+    preconditionedConjugateGradient!(L_diag_rcp, p, r, v, w, z, f, g, collision, dx, maxIterations, ϵ; res_history)
 
 Solve Poisson equation ∇²f = g, using incomplete Cholesky preconditioned conjugate gradient method. 
 """

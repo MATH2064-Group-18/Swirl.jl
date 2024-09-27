@@ -48,25 +48,6 @@ function bilinearInterpolate(f, x, collision)
     return lerp(b1, b2, u[2])
 end
 
-function trilinearInterpolate(f, x, collision)
-    c = round.(Int32, x)
-    S = strides(collision)
-    if collision[i + sum(@. S * (c - 1))] <= 0
-        return 0
-    end
-
-    x0 = floor.(Int32, x)
-    u = x - x0
-
-    index0 = 1 + sum(@. S * (x0 - 1))
-
-    A = @SMatrix [lerp(f[index0], f[index0+S[3]], u[3]) lerp(f[index0+S[2]], f[index0+S[2]+S[3]], u[3]) ;
-        lerp(f[index0+S[1]], f[index0+S[1]+S[3]], u[3]) lerp(f[index0+S[1]+S[2]], f[index0+S[1]+S[2]+S[3]], u[3])
-    ]
-
-    return lerp(lerp(A[1,1], A[2,1], u[1]), lerp(A[1,2], A[2,2], u[1]), u[2])
-end
-
 @generated function generalLinearInterpolate(f::U1, x::U2, collision::Array{T, N}) where {N, T<:AbstractFloat, U1<:AbstractArray{T, N}, U2<:StaticVector{N, T}}
     quote
         c = round.(Int32, x)
