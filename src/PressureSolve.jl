@@ -2,20 +2,13 @@ module PressureSolve
 
 using LinearAlgebra
 
-export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradient!, PressureSolveInfo, PressureSolveMethod
+export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradient!, PressureSolveInfo
 export PressureSolver, JacobiSolver, GaussSeidelSolver, ConjugateGradientSolver, poissonSolve!
 
 struct PressureSolveInfo
     iterations
     solve_time
     residual_norm # 2-norm
-end
-
-@enum PressureSolveMethod begin
-    JacobiMethod
-    GaussSeidelMethod
-    ConjugateGradientMethod
-    PreconditionedConjugateGradientMethod
 end
 
 
@@ -60,6 +53,32 @@ mutable struct ConjugateGradientSolver{T<:AbstractFloat, N} <: PressureSolver{T,
         return new(dx, maxIterations, ϵ, use_preconditioner, similar(empty_array), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), similar(empty_array), similar(empty_array))
     end
 end
+
+function poissonSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=nothing) where {T<:AbstractFloat, N}
+    return gaussSeidel!(f, g, collision, solver.dx, maxIterations; res_history=res_history)
+end
+function poissonSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
+    return poissonSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
+end
+
+function poissonSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=nothing) where {T<:AbstractFloat, N}
+    return jacobi!(f, solver.f_old, g, collision, solver.dx, maxIterations; res_history=res_history)
+end
+function poissonSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
+    return poissonSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
+end
+
+function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations, ϵ; res_history=nothing) where {T<:AbstractFloat, N}
+    fill!(f, zero(eltype(f)))
+    if solver.use_preconditioner
+        return preconditionedConjugateGradient!(solver.L_diag_rcp, solver.p, solver.r, solver.v, solver.w, solver.z, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
+    end
+    return conjugateGradient!(solver.p, solver.r, solver.v, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
+end
+function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
+    return poissonSolve!(solver, f, g, collision, solver.maxIterations, solver.ϵ; res_history=res_history)
+end
+
 
 
 
@@ -219,12 +238,6 @@ function conjugateGradient!(p, r, v, f, g, collision, dx, maxIterations, ϵ; res
     return PressureSolveInfo(iter,  t2 - t1, sqrt(res_sum))
 end
 
-function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=nothing)
-    v = similar(f)
-    p = similar(f)
-    r = zeros(eltype(f), size(f))
-    conjugateGradient!(p, r, v, f, g, collision, dx, maxIterations, ϵ; res_history=res_history)
-end
 
 """
     applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
@@ -399,6 +412,16 @@ function residualNorm(f, g, collision, dxn2)
     return sqrt(res_sum)
 end
 
+
+# Allocating CG and PCG
+
+function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=nothing)
+    v = similar(f)
+    p = similar(f)
+    r = zeros(eltype(f), size(f))
+    conjugateGradient!(p, r, v, f, g, collision, dx, maxIterations, ϵ; res_history=res_history)
+end
+
 function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0; res_history=nothing)
     v = similar(f)
     p = similar(f)
@@ -412,30 +435,5 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
     preconditionedConjugateGradient!(L_diag_rcp, p, r, v, w, z, f, g, collision, dx, maxIterations, ϵ; res_history=res_history)
 end
 
-
-function poissonSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=nothing) where {T<:AbstractFloat, N}
-    return gaussSeidel!(f, g, collision, solver.dx, maxIterations; res_history=res_history)
-end
-function poissonSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
-    return poissonSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
-end
-
-function poissonSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=nothing) where {T<:AbstractFloat, N}
-    return jacobi!(f, solver.f_old, g, collision, solver.dx, maxIterations; res_history=res_history)
-end
-function poissonSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
-    return poissonSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
-end
-
-function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations, ϵ; res_history=nothing) where {T<:AbstractFloat, N}
-    fill!(f, zero(eltype(f)))
-    if solver.use_preconditioner
-        return preconditionedConjugateGradient!(solver.L_diag_rcp, solver.p, solver.r, solver.v, solver.w, solver.z, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
-    end
-    return conjugateGradient!(solver.p, solver.r, solver.v, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
-end
-function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
-    return poissonSolve!(solver, f, g, collision, solver.maxIterations, solver.ϵ; res_history=res_history)
-end
 
 end # module

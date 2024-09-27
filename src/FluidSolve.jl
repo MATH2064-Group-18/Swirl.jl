@@ -8,16 +8,22 @@ include("Projection.jl")
 export timestepUpdate!, Fluid
 
 """
-    timestepUpdate!(fluid, dt)
+    timestepUpdate!(solver, fluid, dt)
 
 Solve over timestep `dt`.
 """
-function timestepUpdate!(fluid::Fluid, dt; solveMethod::PressureSolve.PressureSolveMethod=PressureSolve.JacobiMethod, maxIterations=80, ϵ=0.4)
+function timestepUpdate!(solver, fluid, dt; maxIterations=solver.maxIterations)
     vel_old = similar(fluid.vel)
     copy!(vel_old, fluid.vel)
     Advection.advectVector!(fluid.vel, vel_old, fluid.collision, fluid.dx, dt)
-    projectNonDivergent!(fluid, solveMethod=solveMethod; maxIterations=maxIterations, ϵ=ϵ)
+    projectNonDivergent!(solver, fluid; maxIterations=maxIterations)
     Advection.advectScalar!(fluid.density, fluid.vel, fluid.collision, fluid.dx, dt)
+end
+
+# for compatibility.
+function timestepUpdate!(fluid, dt; maxIterations=80)
+    solver = PressureSolve.JacobiSolver{eltype(fluid.p), ndims(fluid.p)}(fluid.dx, size(fluid.p), maxIterations)
+    timestepUpdate!(solver, fluid, dt)
 end
 
 
