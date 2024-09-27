@@ -408,28 +408,28 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
 end
 
 
-function pressureSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations) where {T<:AbstractFloat, N}
-    return gaussSeidel!(f, g, collision, solver.dx, maxIterations)
+function pressureSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=res_history) where {T<:AbstractFloat, N}
+    return gaussSeidel!(f, g, collision, solver.dx, maxIterations; res_history=res_history)
 end
-function pressureSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}) where {T<:AbstractFloat, N}
-    return pressureSolve!(solver, f, g, collision, solver.maxIterations)
-end
-
-function pressureSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations) where {T<:AbstractFloat, N}
-    return jacobi!(f, solver.f_old, g, collision, solver.dx, maxIterations)
-end
-function pressureSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}) where {T<:AbstractFloat, N}
-    return pressureSolve!(solver, f, g, collision, solver.maxIterations)
+function pressureSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=res_history) where {T<:AbstractFloat, N}
+    return pressureSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
 end
 
-function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations, ϵ) where {T<:AbstractFloat, N}
+function pressureSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=res_history) where {T<:AbstractFloat, N}
+    return jacobi!(f, solver.f_old, g, collision, solver.dx, maxIterations; res_history=res_history)
+end
+function pressureSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=res_history) where {T<:AbstractFloat, N}
+    return pressureSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
+end
+
+function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations, ϵ; res_history=res_history) where {T<:AbstractFloat, N}
     if solver.use_preconditioner
-        return preconditionedConjugateGradient!(solver.L_diag_rcp, solver.p, solver.r, solver.v, solver.w, solver.z, f, g, collision, solver.dx, maxIterations, ϵ)
+        return preconditionedConjugateGradient!(solver.L_diag_rcp, solver.p, solver.r, solver.v, solver.w, solver.z, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
     end
-    return conjugateGradient!(solver.p, solver.r, solver.f, f, g, collision, solver.dx, maxIterations, ϵ)
+    return conjugateGradient!(solver.p, solver.r, solver.f, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
 end
-function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}) where {T<:AbstractFloat, N}
-    return pressureSolve!(solver, f, g, collision, solver.maxIterations, solver.ϵ)
+function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=res_history) where {T<:AbstractFloat, N}
+    return pressureSolve!(solver, f, g, collision, solver.maxIterations, solver.ϵ; res_history=res_history)
 end
 
 end # module
