@@ -24,17 +24,17 @@ mutable struct JacobiSolver{T<:AbstractFloat, N} <: PressureSolver{T, N}
     dx::Vector{T} #maybe make static vector
     maxIterations::Int
     f_old::Array{T, N}
-    function JacobiSolver{T, N}(dx::Vector{T}, Size::NTuple{N, T}, maxIterations::Int) where {T<:AbstractFloat, N}
-        @assert length(dx) == length(Size)
-        new(dx, maxIterations, Array{T, N}(undef, Size))
+    function JacobiSolver{T, N}(dx::Vector{T}, dims::Dims{N}, maxIterations::Int) where {T<:AbstractFloat, N}
+        @assert length(dx) == length(dims)
+        new(dx, maxIterations, Array{T, N}(undef, dims))
     end
 end
 
 mutable struct GaussSeidelSolver{T<:AbstractFloat, N} <: PressureSolver{T, N}
     dx::Vector{T}
     maxIterations::Int
-    function GaussSeidelSolver{T, N}(dx::Vector{T}, Size::NTuple{N, T}, maxIterations::Int) where {T<:AbstractFloat, N}
-        @assert length(dx) == length(Size)
+    function GaussSeidelSolver{T, N}(dx::Vector{T}, dims::Dims{N}, maxIterations::Int) where {T<:AbstractFloat, N}
+        @assert length(dx) == length(dims)
         new(dx, maxIterations)
     end
 end
@@ -50,12 +50,12 @@ mutable struct ConjugateGradientSolver{T<:AbstractFloat, N} <: PressureSolver{T,
     v::Array{T, N}
     w::Array{T, N}
     z::Array{T, N}
-    function ConjugateGradientSolver{T, N}(dx::Vector{T}, Size::NTuple{N, T}, maxIterations::Int, ϵ::T, use_preconditioner::Bool) where {T <: AbstractFloat, N}
-        @assert length(dx) == length(Size)
+    function ConjugateGradientSolver{T, N}(dx::Vector{T}, dims::Dims{N}, maxIterations::Int, ϵ::T, use_preconditioner::Bool) where {T <: AbstractFloat, N}
+        @assert length(dx) == length(dims)
         if use_preconditioner
-            return new(dx, maxIterations, ϵ, use_preconditioner, Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size))
+            return new(dx, maxIterations, ϵ, use_preconditioner, Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims))
         end
-        return new(dx, maxIterations, ϵ, use_preconditioner, empty(Array{T, N}), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), empty(Array{T, N}), empty(Array{T, N}))
+        return new(dx, maxIterations, ϵ, use_preconditioner, empty(Array{T, N}), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), empty(Array{T, N}), empty(Array{T, N}))
     end
 end
 
