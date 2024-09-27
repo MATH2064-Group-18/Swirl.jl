@@ -1,9 +1,10 @@
 module FluidSolve
 
 include("Fluids.jl")
-include("PressureSolve.jl")
-include("Advection.jl")
 include("Projection.jl")
+
+using ..PressureSolve
+using ..Advection
 
 export timestepUpdate!, Fluid
 
