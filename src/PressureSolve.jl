@@ -52,10 +52,11 @@ mutable struct ConjugateGradientSolver{T<:AbstractFloat, N} <: PressureSolver{T,
     z::Array{T, N}
     function ConjugateGradientSolver{T, N}(dx::Vector{T}, dims::Dims{N}, maxIterations::Int, ϵ::T, use_preconditioner::Bool) where {T <: AbstractFloat, N}
         @assert length(dx) == length(dims)
+        empty_array = Array{T, N}(undef, dims .* 0)
         if use_preconditioner
             return new(dx, maxIterations, ϵ, use_preconditioner, Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims))
         end
-        return new(dx, maxIterations, ϵ, use_preconditioner, empty(Array{T, N}), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), empty(Array{T, N}), empty(Array{T, N}))
+        return new(dx, maxIterations, ϵ, use_preconditioner, similar(empty_array), Array{T, N}(undef, dims), Array{T, N}(undef, dims), Array{T, N}(undef, dims), similar(empty_array), similar(empty_array))
     end
 end
 
