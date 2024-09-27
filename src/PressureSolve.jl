@@ -105,7 +105,7 @@ end
 Solve Poisson equation ∇²f = g using conjugate gradient method. 
 
 """
-function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=nothing)
+function conjugateGradient!(p, r, v, f, g, collision, dx, maxIterations, ϵ; res_history=nothing)
     @assert size(f) == size(g) == size(collision)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
 
@@ -113,9 +113,6 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=
 
     n = length(f)
     
-    v = similar(f)
-    p = similar(f)
-    r = zeros(eltype(f), size(f))
 
     t1 = time()
 
@@ -176,6 +173,13 @@ function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=
     return PressureSolveInfo(iter,  t2 - t1, sqrt(res_sum))
 end
 
+function conjugateGradient!(f, g, collision, dx, maxIterations, ϵ; res_history=nothing)
+    v = similar(f)
+    p = similar(f)
+    r = zeros(eltype(f), size(f))
+    conjugateGradient!(p, r, v, f, g, collision, dx, maxIterations, ϵ; res_history=res_history)
+end
+
 """
     applyPreconditioner!(z, w, r, L_diag, collision, dxn2)
 
@@ -229,21 +233,13 @@ end
 
 Solve Poisson equation ∇²f = g, using incomplete Cholesky preconditioned conjugate gradient method. 
 """
-function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0; res_history=nothing)
-    @assert size(f) == size(g) == size(collision)
+function preconditionedConjugateGradient!(L_diag_rcp, p, r, v, w, z, f, g, collision, dx, maxIterations, ϵ=0; res_history=nothing)
+    @assert size(f) == size(g) == size(collision) == size(L_diag_rcp) == size(p) == size(r) == size(v) == size(w) == size(z)
     @assert ndims(f) == ndims(g) == ndims(collision) == length(dx)
 
     dxn2 = @. (one(dx) / dx)^2
     c0 = 2 * sum(dxn2)
-    
-    v = similar(f)
-    p = similar(f)
-    r = zeros(eltype(f), size(f))
-    z = similar(r)
 
-    w = similar(v)
-    
-    L_diag_rcp = similar(w)
     
     t1 = time()
 
@@ -354,6 +350,19 @@ function residualNorm(f, g, collision, dxn2)
         end
     end
     return sqrt(res_sum)
+end
+
+function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ=0; res_history=nothing)
+    v = similar(f)
+    p = similar(f)
+    r = zeros(eltype(f), size(f))
+    z = similar(r)
+
+    w = similar(v)
+    
+    L_diag_rcp = similar(w)
+
+    preconditionedConjugateGradient!(L_diag_rcp, p, r, v, w, z, f, g, collision, dx, maxIterations, ϵ; res_history=res_history)
 end
 
 end # module
