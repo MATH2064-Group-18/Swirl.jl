@@ -61,7 +61,6 @@ function projectNonDivergent!(solver, fluid; maxIterations=solver.maxIterations)
     projectNonDivergent!(solver, fluid.vel, fluid.p, fluid.collision, fluid.dx; maxIterations=maxIterations)
 end
 
-# for compatibility
 function projectNonDivergent!(fluid; maxIterations=80)
     solver = PressureSolve.JacobiSolver{eltype(fluid.p), ndims(fluid.p)}(fluid.dx, size(fluid.p), maxIterations)
     projectNonDivergent!(solver, fluid)

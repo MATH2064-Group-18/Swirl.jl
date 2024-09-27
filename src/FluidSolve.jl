@@ -21,7 +21,6 @@ function timestepUpdate!(solver, fluid, dt; maxIterations=solver.maxIterations)
     Advection.advectScalar!(fluid.density, fluid.vel, fluid.collision, fluid.dx, dt)
 end
 
-# for compatibility.
 function timestepUpdate!(fluid, dt; maxIterations=80)
     solver = PressureSolve.JacobiSolver{eltype(fluid.p), ndims(fluid.p)}(fluid.dx, size(fluid.p), maxIterations)
     timestepUpdate!(solver, fluid, dt)

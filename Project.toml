@@ -1,7 +1,7 @@
 name = "Swirl"
 uuid = "14bce6eb-cb74-4a2f-816d-8c3dfb85de2f"
 authors = ["Grotball <140941449+Grotball@users.noreply.github.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
