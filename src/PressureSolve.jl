@@ -428,7 +428,7 @@ function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g
     if solver.use_preconditioner
         return preconditionedConjugateGradient!(solver.L_diag_rcp, solver.p, solver.r, solver.v, solver.w, solver.z, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
     end
-    return conjugateGradient!(solver.p, solver.r, solver.f, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
+    return conjugateGradient!(solver.p, solver.r, solver.v, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
 end
 function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=res_history) where {T<:AbstractFloat, N}
     return pressureSolve!(solver, f, g, collision, solver.maxIterations, solver.ϵ; res_history=res_history)
