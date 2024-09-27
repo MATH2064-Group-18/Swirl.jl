@@ -3,6 +3,7 @@ module PressureSolve
 using LinearAlgebra
 
 export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradient!, PressureSolveInfo, PressureSolveMethod
+export PressureSolver, JacobiSolver, GaussSeidelSolver, ConjugateGradientSolver, pressureSolve!
 
 struct PressureSolveInfo
     iterations
