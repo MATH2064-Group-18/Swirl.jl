@@ -17,6 +17,48 @@ end
     PreconditionedConjugateGradientMethod
 end
 
+
+abstract type PressureSolver{T<:AbstractFloat, N} end
+
+mutable struct JacobiSolver{T<:AbstractFloat, N} <: PressureSolver{T, N}
+    dx::Vector{T} #maybe make static vector
+    maxIterations::Int
+    f_old::Array{T, N}
+    function JacobiSolver{T, N}(dx::Vector{T}, Size::NTuple{N, T}, maxIterations::Int) where {T<:AbstractFloat, N}
+        @assert length(dx) == length(Size)
+        new(dx, maxIterations, Array{T, N}(undef, Size))
+    end
+end
+
+mutable struct GaussSeidelSolver{T<:AbstractFloat, N} <: PressureSolver{T, N}
+    dx::Vector{T}
+    maxIterations::Int
+    function GaussSeidelSolver{T, N}(dx::Vector{T}, Size::NTuple{N, T}, maxIterations::Int) where {T<:AbstractFloat, N}
+        @assert length(dx) == length(Size)
+        new(dx, maxIterations)
+    end
+end
+
+mutable struct ConjugateGradientSolver{T<:AbstractFloat, N} <: PressureSolver{T, N}
+    dx::Vector{T}
+    maxIterations::Int
+    ϵ::T
+    use_preconditioner::Bool
+    L_diag_rcp::Array{T, N}
+    p::Array{T, N}
+    r::Array{T, N}
+    v::Array{T, N}
+    w::Array{T, N}
+    z::Array{T, N}
+    function ConjugateGradientSolver{T, N}(dx::Vector{T}, Size::NTuple{N, T}, maxIterations::Int, ϵ::T, use_preconditioner::Bool) where {T <: AbstractFloat, N}
+        @assert length(dx) == length(Size)
+        if use_preconditioner
+            return new(dx, maxIterations, ϵ, use_preconditioner, Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size))
+        end
+        return new(dx, maxIterations, ϵ, use_preconditioner, empty(Array{T, N}), Array{T, N}(undef, Size), Array{T, N}(undef, Size), Array{T, N}(undef, Size), empty(Array{T, N}), empty(Array{T, N}))
+    end
+end
+
 """
     jacobi!(f, f_old, g, collision, dx, maxIterations; res_history)
 
@@ -363,6 +405,31 @@ function preconditionedConjugateGradient!(f, g, collision, dx, maxIterations, ϵ
     L_diag_rcp = similar(w)
 
     preconditionedConjugateGradient!(L_diag_rcp, p, r, v, w, z, f, g, collision, dx, maxIterations, ϵ; res_history=res_history)
+end
+
+
+function pressureSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations) where {T<:AbstractFloat, N}
+    return gaussSeidel!(f, g, collision, solver.dx, maxIterations)
+end
+function pressureSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}) where {T<:AbstractFloat, N}
+    return pressureSolve!(solver, f, g, collision, solver.maxIterations)
+end
+
+function pressureSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations) where {T<:AbstractFloat, N}
+    return jacobi!(f, solver.f_old, g, collision, solver.dx, maxIterations)
+end
+function pressureSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}) where {T<:AbstractFloat, N}
+    return pressureSolve!(solver, f, g, collision, solver.maxIterations)
+end
+
+function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations, ϵ) where {T<:AbstractFloat, N}
+    if solver.use_preconditioner
+        return preconditionedConjugateGradient!(solver.L_diag_rcp, solver.p, solver.r, solver.v, solver.w, solver.z, f, g, collision, solver.dx, maxIterations, ϵ)
+    end
+    return conjugateGradient!(solver.p, solver.r, solver.f, f, g, collision, solver.dx, maxIterations, ϵ)
+end
+function pressureSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}) where {T<:AbstractFloat, N}
+    return pressureSolve!(solver, f, g, collision, solver.maxIterations, solver.ϵ)
 end
 
 end # module
