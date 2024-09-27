@@ -15,7 +15,7 @@ end
 abstract type PressureSolver{T<:AbstractFloat, N} end
 
 mutable struct JacobiSolver{T<:AbstractFloat, N} <: PressureSolver{T, N}
-    dx::Vector{T} #maybe make static vector
+    dx::Vector{T}
     maxIterations::Int
     f_old::Array{T, N}
     function JacobiSolver{T, N}(dx::Vector{T}, dims::Dims{N}, maxIterations::Int) where {T<:AbstractFloat, N}
@@ -54,29 +54,20 @@ mutable struct ConjugateGradientSolver{T<:AbstractFloat, N} <: PressureSolver{T,
     end
 end
 
-function poissonSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=nothing) where {T<:AbstractFloat, N}
+function poissonSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; maxIterations=solver.maxIterations, res_history=nothing) where {T<:AbstractFloat, N}
     return gaussSeidel!(f, g, collision, solver.dx, maxIterations; res_history=res_history)
 end
-function poissonSolve!(solver::GaussSeidelSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
-    return poissonSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
-end
 
-function poissonSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations; res_history=nothing) where {T<:AbstractFloat, N}
+function poissonSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; maxIterations=solver.maxIterations, res_history=nothing) where {T<:AbstractFloat, N}
     return jacobi!(f, solver.f_old, g, collision, solver.dx, maxIterations; res_history=res_history)
 end
-function poissonSolve!(solver::JacobiSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
-    return poissonSolve!(solver, f, g, collision, solver.maxIterations; res_history=res_history)
-end
 
-function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}, maxIterations, ϵ; res_history=nothing) where {T<:AbstractFloat, N}
+function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; maxIterations=solver.maxIterations, ϵ=solver.ϵ, res_history=nothing) where {T<:AbstractFloat, N}
     fill!(f, zero(eltype(f)))
     if solver.use_preconditioner
         return preconditionedConjugateGradient!(solver.L_diag_rcp, solver.p, solver.r, solver.v, solver.w, solver.z, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
     end
     return conjugateGradient!(solver.p, solver.r, solver.v, f, g, collision, solver.dx, maxIterations, ϵ; res_history=res_history)
-end
-function poissonSolve!(solver::ConjugateGradientSolver{T, N}, f::Array{T, N}, g::Array{T, N}, collision::Array{T, N}; res_history=nothing) where {T<:AbstractFloat, N}
-    return poissonSolve!(solver, f, g, collision, solver.maxIterations, solver.ϵ; res_history=res_history)
 end
 
 

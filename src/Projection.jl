@@ -39,7 +39,7 @@ function projectNonDivergent!(
         end
     end
 
-    pressureSolveInfo = PressureSolve.poissonSolve!(solver, p, v_div, collision, maxIterations)
+    pressureSolveInfo = PressureSolve.poissonSolve!(solver, p, v_div, collision; maxIterations=maxIterations)
 
 
     for i = 1:n
