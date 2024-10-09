@@ -95,7 +95,9 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
     t1 = time()
 
     for iter = 1:maxIterations
-        copy!(f_old, f)
+        @batch for i = 1:n
+            @inbounds f_old[i] = f[i]
+        end
         @batch for i = 1:n
             # Ain't got no time for bounds checks
             @inbounds if collision[i] > 0
