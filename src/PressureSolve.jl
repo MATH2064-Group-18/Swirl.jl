@@ -1,6 +1,6 @@
 module PressureSolve
 
-using LinearAlgebra
+using LinearAlgebra, Polyester
 
 export jacobi!, gaussSeidel!, conjugateGradient!, preconditionedConjugateGradient!, PressureSolveInfo
 export PressureSolver, JacobiSolver, GaussSeidelSolver, ConjugateGradientSolver, poissonSolve!
@@ -96,7 +96,7 @@ function jacobi!(f, f_old, g, collision, dx, maxIterations; res_history=nothing)
 
     for iter = 1:maxIterations
         copy!(f_old, f)
-        Threads.@threads for i = 1:n
+        @batch for i = 1:n
             # Ain't got no time for bounds checks
             @inbounds if collision[i] > 0
                 A = zero(eltype(f))
